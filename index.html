@@ -6,22 +6,15 @@
     <title>단체선물대장 상품카탈로그</title>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
-            font-family: "Pretendard", -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif;
             background: #f5f5f5;
             padding: 20px;
         }
         
-        .container {
-            max-width: 1800px;
-            margin: 0 auto;
-        }
+        .container { max-width: 1800px; margin: 0 auto; }
         
         header {
             background: white;
@@ -31,10 +24,7 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
-        h1 {
-            margin-bottom: 20px;
-            color: #333;
-        }
+        h1 { margin-bottom: 20px; color: #333; }
         
         .controls {
             display: flex;
@@ -53,27 +43,33 @@
             font-size: 14px;
         }
         
-        .search-box:focus {
-            outline: none;
-            border-color: #e91e63;
-        }
+        .search-box:focus { outline: none; border-color: #e91e63; }
         
-        select {
-            padding: 10px 15px;
-            border: 2px solid #ddd;
+        button {
+            padding: 10px 20px;
+            border: none;
             border-radius: 6px;
+            cursor: pointer;
             font-size: 14px;
-            background: white;
+            white-space: nowrap;
+            transition: opacity 0.2s;
         }
         
-        .price-filters {
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .btn-reload { background: #4caf50; color: white; }
+        .btn-inquiry { background: #e91e63; color: white; }
+        
+        .filter-section { margin-bottom: 12px; }
+        .filter-label { font-size: 13px; color: #666; margin-bottom: 6px; font-weight: 600; }
+        
+        .filter-chips {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
-            margin-bottom: 10px;
         }
         
-        .price-chip {
+        .chip {
             padding: 8px 16px;
             border: 2px solid #ddd;
             border-radius: 20px;
@@ -84,76 +80,27 @@
             user-select: none;
         }
         
-        .price-chip:hover {
-            border-color: #e91e63;
-            background: #fce4ec;
-        }
+        .chip:hover { border-color: #e91e63; background: #fce4ec; }
+        .chip.active { background: #e91e63; color: white; border-color: #e91e63; }
         
-        .price-chip.active {
-            background: #e91e63;
-            color: white;
-            border-color: #e91e63;
-        }
+        .category-chip:hover { border-color: #1976d2; background: #e3f2fd; }
+        .category-chip.active { background: #1976d2; color: white; border-color: #1976d2; }
         
-        .category-filters {
+        .stats-bar {
+            margin-top: 15px;
             display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 10px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
         }
         
-        .category-chip {
-            padding: 8px 16px;
-            border: 2px solid #ddd;
-            border-radius: 20px;
-            background: white;
-            cursor: pointer;
-            font-size: 13px;
-            transition: all 0.2s;
-            user-select: none;
-        }
-        
-        .category-chip:hover {
-            border-color: #1976d2;
-            background: #e3f2fd;
-        }
-        
-        .category-chip.active {
-            background: #1976d2;
-            color: white;
-            border-color: #1976d2;
-        }
-        
-        .filter-section {
-            margin-bottom: 8px;
-        }
-        
-        .filter-label {
-            font-size: 13px;
-            color: #666;
-            margin-bottom: 6px;
-            font-weight: 600;
-        }
-        
-        .stats {
-            color: #666;
-            font-size: 14px;
-        }
-        
-        .table-container {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        
-        .table-wrapper {
-            overflow-x: auto;
-        }
+        .stats { color: #666; font-size: 14px; }
+        .selected-info { color: #e91e63; font-weight: 600; }
         
         table {
             width: 100%;
             border-collapse: collapse;
+            background: white;
         }
         
         thead {
@@ -180,13 +127,8 @@
             vertical-align: top;
         }
         
-        tbody tr {
-            transition: background 0.15s;
-        }
-        
-        tbody tr:hover {
-            background: #f8f9fa;
-        }
+        tbody tr:hover { background: #f8f9fa; }
+        td:last-child { text-align: right; }
         
         .product-image {
             width: 80px;
@@ -194,20 +136,46 @@
             object-fit: cover;
             border-radius: 4px;
             background: #f0f0f0;
-            display: block;
+            cursor: zoom-in;
         }
         
-        .product-code {
-            font-family: 'Courier New', monospace;
-            color: #666;
+        .no-image {
+            width: 80px;
+            height: 80px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 11px;
+        }
+        
+        .product-code { font-family: 'Courier New', monospace; color: #666; font-size: 12px; }
+        .product-name { font-weight: 600; color: #222; }
+        .product-composition { color: #666; font-size: 12px; line-height: 1.4; }
+        .product-origin { color: #666; font-size: 12px; }
+        
+        .product-description {
+            color: #555;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .product-description.expanded { -webkit-line-clamp: unset; }
+        
+        .expand-btn {
+            color: #e91e63;
+            cursor: pointer;
             font-size: 12px;
+            margin-top: 4px;
+            display: inline-block;
         }
         
-        .product-name {
-            font-weight: 600;
-            color: #222;
-            margin-bottom: 2px;
-        }
+        .expand-btn:hover { text-decoration: underline; }
         
         .category-badge {
             display: inline-block;
@@ -219,58 +187,176 @@
             font-weight: 500;
         }
         
-        .product-composition {
-            color: #666;
-            font-size: 12px;
-            line-height: 1.4;
-        }
-        
-        .product-description {
-            color: #555;
-            line-height: 1.5;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        
-        .product-description.expanded {
-            -webkit-line-clamp: unset;
-        }
-        
-        .expand-btn {
-            color: #e91e63;
-            cursor: pointer;
-            font-size: 12px;
-            margin-top: 4px;
+        .tax-badge {
             display: inline-block;
-        }
-        
-        .expand-btn:hover {
-            text-decoration: underline;
-        }
-        
-        .product-origin {
-            color: #666;
-            font-size: 12px;
-        }
-        
-        .product-price {
-            font-size: 16px;
-            font-weight: 700;
-            color: #e91e63;
-            white-space: nowrap;
-        }
-        
-        /* 가격 컬럼 우측 정렬 */
-        td:last-child {
-            text-align: right;
-        }
-        
-        .tax-type {
+            padding: 4px 8px;
+            border-radius: 4px;
             font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .tax-badge.과세 { background: #e8f5e9; color: #2e7d32; }
+        .tax-badge.면세 { background: #fff3e0; color: #ef6c00; }
+        .tax-badge.비과세 { background: #e3f2fd; color: #1565c0; }
+        
+        .product-price { font-size: 16px; font-weight: 700; color: #e91e63; white-space: nowrap; }
+        .original-price { font-size: 11px; color: #999; text-decoration: line-through; }
+        .discount-badge {
+            display: inline-block;
+            background: #ff5252;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-left: 4px;
+        }
+        
+        .price-container { display: flex; flex-direction: column; gap: 4px; }
+        
+        /* 이미지 확대 */
+        .image-zoom-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            cursor: zoom-out;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .image-zoom-overlay.active { display: flex; }
+        .image-zoom-content { max-width: 90%; max-height: 90%; object-fit: contain; }
+        
+        /* 문의하기 모달 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            overflow-y: auto;
+        }
+        
+        .modal-overlay.active { display: flex; }
+        
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 30px;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
+        }
+        
+        .modal-header h2 { color: #333; }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
             color: #999;
-            margin-top: 2px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+        }
+        
+        .modal-close:hover { color: #333; }
+        
+        .selected-products {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        
+        .selected-products h3 {
+            margin-bottom: 10px;
+            color: #555;
+            font-size: 14px;
+        }
+        
+        .selected-product-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .selected-product-item:last-child { border-bottom: none; }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .form-group label .required { color: #e91e63; }
+        
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #e91e63;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        
+        .btn-cancel {
+            background: #999;
+            color: white;
+        }
+        
+        .btn-submit {
+            background: #e91e63;
+            color: white;
         }
         
         .loading {
@@ -294,135 +380,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        
-        .error {
-            text-align: center;
-            padding: 40px;
-            color: #d32f2f;
-            background: #ffebee;
-            border-radius: 8px;
-            margin: 20px 0;
-        }
-        
-        .load-more {
-            text-align: center;
-            padding: 20px;
-            background: white;
-            border-top: 1px solid #f0f0f0;
-        }
-        
-        .load-more button {
-            padding: 12px 30px;
-            background: #e91e63;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        
-        .load-more button:hover {
-            background: #c2185b;
-        }
-        
-        .load-more button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-        
-        .no-image {
-            width: 80px;
-            height: 80px;
-            background: #f0f0f0;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #999;
-            font-size: 11px;
-            text-align: center;
-        }
-        
-        /* 이미지 확대 기능 */
-        .image-cell {
-            position: relative;
-        }
-        
-        .product-image:hover {
-            cursor: zoom-in;
-        }
-        
-        .image-zoom-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 9999;
-            cursor: zoom-out;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .image-zoom-overlay.active {
-            display: flex;
-        }
-        
-        .image-zoom-content {
-            max-width: 90%;
-            max-height: 90%;
-            object-fit: contain;
-        }
-        
-        /* 할인율 스타일 */
-        .price-container {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        
-        .original-price {
-            font-size: 11px;
-            color: #999;
-            text-decoration: line-through;
-        }
-        
-        .discount-badge {
-            display: inline-block;
-            background: #ff5252;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 700;
-            margin-left: 4px;
-        }
-        
-        .tax-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-        
-        .tax-badge.과세 {
-            background: #e8f5e9;
-            color: #2e7d32;
-        }
-        
-        .tax-badge.면세 {
-            background: #fff3e0;
-            color: #ef6c00;
-        }
-        
-        .tax-badge.비과세 {
-            background: #e3f2fd;
-            color: #1565c0;
-        }
     </style>
 </head>
 <body>
@@ -430,45 +387,51 @@
         <header>
             <h1>단체선물대장 상품카탈로그</h1>
             <div class="controls">
-                <input 
-                    type="text" 
-                    id="searchBox" 
-                    class="search-box" 
-                    placeholder="검색"
-                >
-                <button id="reloadBtn" style="padding: 10px 20px; background: #4caf50; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; white-space: nowrap;">
-                    다시불러오기
-                </button>
+                <input type="text" id="searchBox" class="search-box" placeholder="검색">
+                <button id="reloadBtn" class="btn-reload">다시불러오기</button>
             </div>
             
             <div class="filter-section">
                 <div class="filter-label">카테고리</div>
-                <div class="category-filters" id="categoryFilters">
-                    <div class="category-chip active" data-category="all">전체</div>
-                    <!-- 동적으로 추가됨 -->
+                <div class="filter-chips" id="categoryFilters">
+                    <div class="chip category-chip active" data-category="all">전체</div>
                 </div>
             </div>
             
             <div class="filter-section">
                 <div class="filter-label">가격대</div>
-                <div class="price-filters">
-                    <div class="price-chip active" data-range="all">전체</div>
-                    <div class="price-chip" data-range="0-30000">3만원 이하</div>
-                    <div class="price-chip" data-range="30000-50000">3~5만원</div>
-                    <div class="price-chip" data-range="50000-70000">5~7만원</div>
-                    <div class="price-chip" data-range="70000-100000">7~10만원</div>
-                    <div class="price-chip" data-range="100000-999999999">10만원 이상</div>
+                <div class="filter-chips">
+                    <div class="chip active" data-range="all">전체</div>
+                    <div class="chip" data-range="0-30000">3만원 이하</div>
+                    <div class="chip" data-range="30000-50000">3~5만원</div>
+                    <div class="chip" data-range="50000-70000">5~7만원</div>
+                    <div class="chip" data-range="70000-100000">7~10만원</div>
+                    <div class="chip" data-range="100000-150000">10~15만원</div>
+                    <div class="chip" data-range="150000-200000">15~20만원</div>
+                    <div class="chip" data-range="200000-300000">20~30만원</div>
+                    <div class="chip" data-range="300000-999999999">30만원 이상</div>
                 </div>
             </div>
             
-            <div class="stats" id="stats">상품을 불러오는 중...</div>
+            <div class="stats-bar">
+                <div class="stats" id="stats">상품을 불러오는 중...</div>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div id="selectedCount" class="stats">
+                        선택: <span class="selected-info">0</span>개
+                    </div>
+                    <button id="inquiryBtn" class="btn-inquiry" disabled>선택상품으로 문의하기</button>
+                </div>
+            </div>
         </header>
         
-        <div class="table-container">
-            <div class="table-wrapper">
+        <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden;">
+            <div style="overflow-x: auto;">
                 <table>
                     <thead>
                         <tr>
+                            <th style="width: 50px;">
+                                <input type="checkbox" id="selectAll" style="cursor: pointer;">
+                            </th>
                             <th style="width: 100px;">이미지</th>
                             <th style="width: 100px;">상품코드</th>
                             <th style="width: 120px;">카테고리</th>
@@ -476,13 +439,13 @@
                             <th style="width: 150px;">구성</th>
                             <th style="width: auto;">상세설명</th>
                             <th style="width: 100px;">원산지</th>
-                            <th style="width: 80px;">과세</th>
+                            <th style="width: 90px;">과세여부</th>
                             <th style="width: 120px; text-align: right;">가격</th>
                         </tr>
                     </thead>
                     <tbody id="productTableBody">
                         <tr>
-                            <td colspan="9">
+                            <td colspan="10">
                                 <div class="loading">
                                     <div class="spinner"></div>
                                     상품 정보를 불러오는 중...
@@ -492,8 +455,8 @@
                     </tbody>
                 </table>
             </div>
-            <div class="load-more" id="loadMoreSection" style="display: none;">
-                <button id="loadMoreBtn">더 보기 (100개)</button>
+            <div id="loadMoreSection" style="display: none; text-align: center; padding: 20px; border-top: 1px solid #f0f0f0;">
+                <button id="loadMoreBtn" class="btn-inquiry">더 보기</button>
             </div>
         </div>
     </div>
@@ -502,28 +465,78 @@
     <div class="image-zoom-overlay" id="imageZoomOverlay">
         <img class="image-zoom-content" id="imageZoomContent" src="" alt="">
     </div>
+    
+    <!-- 문의하기 모달 -->
+    <div class="modal-overlay" id="inquiryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>상품 문의하기</h2>
+                <button class="modal-close" onclick="closeInquiryModal()">&times;</button>
+            </div>
+            
+            <div class="selected-products">
+                <h3>선택한 상품 (<span id="modalProductCount">0</span>개)</h3>
+                <div id="modalProductList"></div>
+            </div>
+            
+            <form id="inquiryForm">
+                <div class="form-group">
+                    <label>회사명 <span class="required">*</span></label>
+                    <input type="text" name="company" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>담당자명 <span class="required">*</span></label>
+                    <input type="text" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>전화번호 <span class="required">*</span></label>
+                    <input type="tel" name="phone" required placeholder="010-1234-5678">
+                </div>
+                
+                <div class="form-group">
+                    <label>이메일 <span class="required">*</span></label>
+                    <input type="email" name="email" required placeholder="example@company.com">
+                </div>
+                
+                <div class="form-group">
+                    <label>문의내용</label>
+                    <textarea name="message" placeholder="문의하실 내용을 입력해주세요"></textarea>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeInquiryModal()">취소</button>
+                    <button type="submit" class="btn-submit">문의하기</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script>
-        // 구글 시트 CSV URL
         const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT18y-O0crmeMVOqjOeb7wUhypyw6ji_04pRuf5kL6o6QCizpGtWZ0NEUON2xCwvTdGPMI8GPHNHnT4/pub?output=csv';
         
         let allProducts = [];
         let filteredProducts = [];
+        let selectedProducts = new Set();
         let displayedCount = 0;
         let selectedPriceRange = 'all';
         let selectedCategory = 'all';
-        const BATCH_SIZE = 100; // 테이블이라 100개씩
+        const BATCH_SIZE = 100;
         
         const tableBody = document.getElementById('productTableBody');
         const searchBox = document.getElementById('searchBox');
         const reloadBtn = document.getElementById('reloadBtn');
         const statsEl = document.getElementById('stats');
+        const selectedCountEl = document.getElementById('selectedCount');
+        const inquiryBtn = document.getElementById('inquiryBtn');
         const loadMoreSection = document.getElementById('loadMoreSection');
         const loadMoreBtn = document.getElementById('loadMoreBtn');
         const categoryFilters = document.getElementById('categoryFilters');
+        const selectAllCheckbox = document.getElementById('selectAll');
         
-        // 강력한 CSV 파싱 (RFC 4180 완전 준수)
-        function parseCSVRobust(text) {
+        // CSV 파싱
+        function parseCSV(text) {
             const rows = [];
             let currentRow = [];
             let currentCell = '';
@@ -544,10 +557,7 @@
                     currentRow.push(currentCell);
                     currentCell = '';
                 } else if ((char === '\n' || char === '\r') && !inQuotes) {
-                    if (char === '\r' && nextChar === '\n') {
-                        i++;
-                    }
-                    
+                    if (char === '\r' && nextChar === '\n') i++;
                     if (currentCell || currentRow.length > 0) {
                         currentRow.push(currentCell);
                         if (currentRow.some(cell => cell.trim())) {
@@ -576,75 +586,53 @@
             try {
                 const response = await fetch(SHEET_CSV_URL);
                 const csvText = await response.text();
+                const rows = parseCSV(csvText);
                 
-                const rows = parseCSVRobust(csvText);
-                
-                if (rows.length < 2) {
-                    throw new Error('데이터가 없습니다');
-                }
+                if (rows.length < 2) throw new Error('데이터가 없습니다');
                 
                 const headers = rows[0];
                 const dataRows = rows.slice(1);
                 
-                console.log('헤더:', headers);
-                console.log('첫 3개 행:', dataRows.slice(0, 3));
-                
                 allProducts = dataRows.map((row, index) => {
-                    const obj = { _originalIndex: index }; // 원본 순서 저장
-                    headers.forEach((header, index) => {
-                        // 모든 값에 trim 적용
-                        const value = row[index] || '';
+                    const obj = { _originalIndex: index };
+                    headers.forEach((header, idx) => {
+                        const value = row[idx] || '';
                         obj[header] = typeof value === 'string' ? value.trim() : value;
                     });
                     return obj;
                 }).filter(product => product.productName && product.productName.trim());
                 
-                console.log('총 상품 수:', allProducts.length);
-                
-                // 카테고리 목록 추출 및 필터 생성
+                // 카테고리 추출
                 const categories = [...new Set(allProducts
                     .map(p => p.categoryName)
                     .filter(c => c && c.trim())
                 )].sort();
                 
-                console.log('카테고리 목록:', categories);
-                
-                // 기존 카테고리 칩 제거 (전체 칩만 남김)
                 const allChip = categoryFilters.querySelector('[data-category="all"]');
                 categoryFilters.innerHTML = '';
                 categoryFilters.appendChild(allChip);
                 
-                // 카테고리 필터 칩 동적 생성
-                const categoryChipsHTML = categories.map(cat => 
-                    `<div class="category-chip" data-category="${cat}">${cat}</div>`
-                ).join('');
-                
-                categoryFilters.insertAdjacentHTML('beforeend', categoryChipsHTML);
-                
-                // 카테고리 필터 이벤트 리스너 추가
-                document.querySelectorAll('.category-chip').forEach(chip => {
-                    chip.addEventListener('click', () => {
-                        handleCategoryFilter(chip.dataset.category);
-                    });
+                categories.forEach(cat => {
+                    const chip = document.createElement('div');
+                    chip.className = 'chip category-chip';
+                    chip.dataset.category = cat;
+                    chip.textContent = cat;
+                    chip.addEventListener('click', () => handleCategoryFilter(cat));
+                    categoryFilters.appendChild(chip);
                 });
                 
                 filteredProducts = [...allProducts];
-                
                 updateStats();
                 renderProducts(true);
                 
             } catch (error) {
-                console.error('Error loading products:', error);
+                console.error('Error:', error);
                 tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="9">
-                            <div class="error">
-                                상품을 불러오는데 실패했습니다.<br>
-                                ${error.message}<br><br>
-                                구글 시트가 "웹에 게시"되었는지 확인해주세요.
-                            </div>
-                        </td>
-                    </tr>
+                    <tr><td colspan="10">
+                        <div class="loading" style="color: #d32f2f;">
+                            데이터를 불러올 수 없습니다.<br>${error.message}
+                        </div>
+                    </td></tr>
                 `;
             }
         }
@@ -661,13 +649,7 @@
             const batch = filteredProducts.slice(start, end);
             
             if (batch.length === 0 && reset) {
-                tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="9">
-                            <div class="loading">검색 결과가 없습니다.</div>
-                        </td>
-                    </tr>
-                `;
+                tableBody.innerHTML = '<tr><td colspan="10"><div class="loading">검색 결과가 없습니다.</div></td></tr>';
                 loadMoreSection.style.display = 'none';
                 return;
             }
@@ -675,28 +657,31 @@
             const html = batch.map(product => {
                 const hasLongDescription = (product.productDescription || '').length > 150;
                 const descId = `desc-${Math.random().toString(36).substr(2, 9)}`;
-                
-                // 설명에서 엔터를 공백으로 변환 (빈 칸 방지)
                 const description = (product.productDescription || '-')
-                    .replace(/\n+/g, ' ')  // 엔터를 공백으로
-                    .replace(/\s+/g, ' ')  // 연속된 공백을 하나로
+                    .replace(/\n+/g, ' ')
+                    .replace(/\s+/g, ' ')
                     .trim();
                 
-                // 할인율 계산 - 문자열을 숫자로 변환
-                // originPrice 또는 oralginPrice 둘 다 지원
                 const salesPrice = parseFloat(String(product.salesPrice || '0').replace(/,/g, ''));
                 const originPrice = parseFloat(String(product.originPrice || product.oralginPrice || '0').replace(/,/g, ''));
                 let discountRate = 0;
-                
-                console.log('Price check:', product.productName, 'sales:', salesPrice, 'origin:', originPrice);
                 
                 if (originPrice > 0 && salesPrice > 0 && originPrice > salesPrice) {
                     discountRate = Math.round(((originPrice - salesPrice) / originPrice) * 100);
                 }
                 
+                const productId = product.productCode || product._originalIndex;
+                const isChecked = selectedProducts.has(productId);
+                
                 return `
                     <tr>
-                        <td class="image-cell">
+                        <td>
+                            <input type="checkbox" class="product-checkbox" 
+                                   data-product-id="${productId}" 
+                                   ${isChecked ? 'checked' : ''}
+                                   onchange="handleProductSelect(this)">
+                        </td>
+                        <td>
                             ${product.thumbnailImageUrl ? 
                                 `<img class="product-image" src="${product.thumbnailImageUrl}" 
                                      alt="${product.productName}" loading="lazy"
@@ -709,30 +694,23 @@
                         <td><div class="product-code">${product.productCode || '-'}</div></td>
                         <td>
                             ${product.categoryName ? 
-                                `<span class="category-badge">${product.categoryName}</span>` : 
-                                '-'
+                                `<span class="category-badge">${product.categoryName}</span>` : '-'
                             }
                         </td>
-                        <td>
-                            <div class="product-name">${product.productName || '-'}</div>
-                        </td>
-                        <td>
-                            <div class="product-composition">${product.productComposition || '-'}</div>
-                        </td>
+                        <td><div class="product-name">${product.productName || '-'}</div></td>
+                        <td><div class="product-composition">${product.productComposition || '-'}</div></td>
                         <td>
                             <div class="product-description ${hasLongDescription ? '' : 'expanded'}" id="${descId}">
                                 ${description}
                             </div>
                             ${hasLongDescription ? 
-                                `<span class="expand-btn" onclick="toggleDescription('${descId}')">더보기</span>` : 
-                                ''
+                                `<span class="expand-btn" onclick="toggleDescription('${descId}')">더보기</span>` : ''
                             }
                         </td>
                         <td><div class="product-origin">${product.origin || '-'}</div></td>
                         <td>
                             ${product.taxType ? 
-                                `<span class="tax-badge ${product.taxType}">${product.taxType}</span>` : 
-                                '-'
+                                `<span class="tax-badge ${product.taxType}">${product.taxType}</span>` : '-'
                             }
                         </td>
                         <td>
@@ -742,8 +720,7 @@
                                     ${discountRate > 0 ? `<span class="discount-badge">${discountRate}%↓</span>` : ''}
                                 </div>
                                 ${originPrice > 0 && discountRate > 0 ? 
-                                    `<div class="original-price">${formatPrice(originPrice)}원</div>` : 
-                                    ''
+                                    `<div class="original-price">${formatPrice(originPrice)}원</div>` : ''
                                 }
                             </div>
                         </td>
@@ -765,48 +742,15 @@
             } else {
                 loadMoreSection.style.display = 'none';
             }
-        }
-        
-        // 설명 확장/축소
-        function toggleDescription(id) {
-            const el = document.getElementById(id);
-            const btn = el.nextElementSibling;
             
-            if (el.classList.contains('expanded')) {
-                el.classList.remove('expanded');
-                btn.textContent = '더보기';
-            } else {
-                el.classList.add('expanded');
-                btn.textContent = '접기';
-            }
+            updateSelectAllState();
         }
-        
-        // 이미지 확대
-        function zoomImage(src) {
-            const overlay = document.getElementById('imageZoomOverlay');
-            const img = document.getElementById('imageZoomContent');
-            img.src = src;
-            overlay.classList.add('active');
-        }
-        
-        // 이미지 확대 닫기
-        function closeZoom() {
-            const overlay = document.getElementById('imageZoomOverlay');
-            overlay.classList.remove('active');
-        }
-        
-        // 전역 함수로 등록
-        window.toggleDescription = toggleDescription;
-        window.zoomImage = zoomImage;
-        window.closeZoom = closeZoom;
         
         // 검색 및 필터링
         function handleSearch() {
             const query = searchBox.value.toLowerCase().trim();
-            
             let results = allProducts;
             
-            // 텍스트 검색 (원산지 제외)
             if (query) {
                 results = results.filter(product => {
                     return (
@@ -818,60 +762,86 @@
                 });
             }
             
-            // 카테고리 필터 (AND 조건)
             if (selectedCategory !== 'all') {
-                results = results.filter(product => {
-                    return product.categoryName === selectedCategory;
-                });
+                results = results.filter(product => product.categoryName === selectedCategory);
             }
             
-            // 가격대 필터 (AND 조건)
             if (selectedPriceRange !== 'all') {
                 const [min, max] = selectedPriceRange.split('-').map(Number);
                 results = results.filter(product => {
-                    const price = parseFloat(product.salesPrice || 0);
+                    const price = parseFloat(String(product.salesPrice || '0').replace(/,/g, ''));
                     return price >= min && price <= max;
                 });
             }
             
             filteredProducts = results;
-            // 항상 원본 순서 유지 (마진순)
             filteredProducts.sort((a, b) => a._originalIndex - b._originalIndex);
             updateStats();
             renderProducts(true);
         }
         
-        // 카테고리 필터 변경
+        // 카테고리 필터
         function handleCategoryFilter(category) {
             selectedCategory = category;
-            
-            // 칩 활성화 상태 업데이트
             document.querySelectorAll('.category-chip').forEach(chip => {
-                if (chip.dataset.category === category) {
-                    chip.classList.add('active');
-                } else {
-                    chip.classList.remove('active');
-                }
+                chip.classList.toggle('active', chip.dataset.category === category);
             });
-            
-            handleSearch(); // 검색 다시 실행
-        }
-        
-        // 가격대 필터
-        function handlePriceFilter(range) {
-            selectedPriceRange = range;
-            
-            document.querySelectorAll('.price-chip').forEach(chip => {
-                if (chip.dataset.range === range) {
-                    chip.classList.add('active');
-                } else {
-                    chip.classList.remove('active');
-                }
-            });
-            
             handleSearch();
         }
         
+        // 가격 필터
+        function handlePriceFilter(range) {
+            selectedPriceRange = range;
+            document.querySelectorAll('[data-range]').forEach(chip => {
+                chip.classList.toggle('active', chip.dataset.range === range);
+            });
+            handleSearch();
+        }
+        
+        // 상품 선택
+        function handleProductSelect(checkbox) {
+            const productId = checkbox.dataset.productId;
+            if (checkbox.checked) {
+                selectedProducts.add(productId);
+            } else {
+                selectedProducts.delete(productId);
+            }
+            updateSelectedCount();
+            updateSelectAllState();
+        }
+        
+        // 전체 선택
+        function handleSelectAll() {
+            const checkboxes = document.querySelectorAll('.product-checkbox');
+            const isChecked = selectAllCheckbox.checked;
+            
+            checkboxes.forEach(cb => {
+                cb.checked = isChecked;
+                const productId = cb.dataset.productId;
+                if (isChecked) {
+                    selectedProducts.add(productId);
+                } else {
+                    selectedProducts.delete(productId);
+                }
+            });
+            
+            updateSelectedCount();
+        }
+        
+        // 전체 선택 상태 업데이트
+        function updateSelectAllState() {
+            const checkboxes = document.querySelectorAll('.product-checkbox');
+            const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+            selectAllCheckbox.checked = checkboxes.length > 0 && checkedCount === checkboxes.length;
+            selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+        }
+        
+        // 선택 상품 수 업데이트
+        function updateSelectedCount() {
+            const count = selectedProducts.size;
+            selectedCountEl.innerHTML = `선택: <span class="selected-info">${count}</span>개`;
+            inquiryBtn.disabled = count === 0;
+        }
         
         // 통계 업데이트
         function updateStats() {
@@ -885,88 +855,171 @@
                 const ranges = {
                     '0-30000': '3만원 이하',
                     '30000-50000': '3~5만원',
-                    '50000-70000': '5~7만원', 
+                    '50000-70000': '5~7만원',
                     '70000-100000': '7~10만원',
-                    '100000-999999999': '10만원 이상'
+                    '100000-150000': '10~15만원',
+                    '150000-200000': '15~20만원',
+                    '200000-300000': '20~30만원',
+                    '300000-999999999': '30만원 이상'
                 };
                 filters.push(`가격: ${ranges[selectedPriceRange]}`);
             }
             
-            if (filters.length > 0) {
-                statsEl.textContent = `전체 ${total.toLocaleString()}개 중 ${showing.toLocaleString()}개 표시 (${filters.join(', ')})`;
-            } else {
-                statsEl.textContent = `전체 ${total.toLocaleString()}개 상품`;
-            }
+            statsEl.textContent = filters.length > 0
+                ? `전체 ${total.toLocaleString()}개 중 ${showing.toLocaleString()}개 표시 (${filters.join(', ')})`
+                : `전체 ${total.toLocaleString()}개 상품`;
         }
         
-        // 가격 포맷팅
+        // 문의하기 모달 열기
+        function openInquiryModal() {
+            const modal = document.getElementById('inquiryModal');
+            const modalProductCount = document.getElementById('modalProductCount');
+            const modalProductList = document.getElementById('modalProductList');
+            
+            const selectedProductsData = allProducts.filter(p => 
+                selectedProducts.has(p.productCode || p._originalIndex)
+            );
+            
+            modalProductCount.textContent = selectedProductsData.length;
+            modalProductList.innerHTML = selectedProductsData.map(p => `
+                <div class="selected-product-item">
+                    ${p.productName} - ${formatPrice(parseFloat(String(p.salesPrice || '0').replace(/,/g, '')))}원
+                </div>
+            `).join('');
+            
+            modal.classList.add('active');
+        }
+        
+        // 문의하기 모달 닫기
+        function closeInquiryModal() {
+            document.getElementById('inquiryModal').classList.remove('active');
+        }
+        
+        // 문의하기 제출
+        async function handleInquirySubmit(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const selectedProductsData = allProducts.filter(p => 
+                selectedProducts.has(p.productCode || p._originalIndex)
+            );
+            
+            const data = {
+                company: formData.get('company'),
+                name: formData.get('name'),
+                phone: formData.get('phone'),
+                email: formData.get('email'),
+                message: formData.get('message'),
+                products: selectedProductsData.map(p => ({
+                    code: p.productCode,
+                    name: p.productName,
+                    price: p.salesPrice
+                }))
+            };
+            
+            console.log('문의 데이터:', data);
+            
+            // TODO: API 호출
+            // try {
+            //     const response = await fetch('YOUR_API_ENDPOINT', {
+            //         method: 'POST',
+            //         headers: { 'Content-Type': 'application/json' },
+            //         body: JSON.stringify(data)
+            //     });
+            //     
+            //     if (response.ok) {
+            //         alert('문의가 접수되었습니다.');
+            //         closeInquiryModal();
+            //         e.target.reset();
+            //     } else {
+            //         alert('문의 접수에 실패했습니다.');
+            //     }
+            // } catch (error) {
+            //     console.error('Error:', error);
+            //     alert('오류가 발생했습니다.');
+            // }
+            
+            // 임시: 콘솔 출력 후 완료 메시지
+            alert('문의가 접수되었습니다.\n(개발자 콘솔에서 데이터를 확인하세요)');
+            closeInquiryModal();
+            e.target.reset();
+        }
+        
+        // 유틸리티 함수들
+        function toggleDescription(id) {
+            const el = document.getElementById(id);
+            const btn = el.nextElementSibling;
+            el.classList.toggle('expanded');
+            btn.textContent = el.classList.contains('expanded') ? '접기' : '더보기';
+        }
+        
+        function zoomImage(src) {
+            const overlay = document.getElementById('imageZoomOverlay');
+            const img = document.getElementById('imageZoomContent');
+            img.src = src;
+            overlay.classList.add('active');
+        }
+        
+        function closeZoom() {
+            document.getElementById('imageZoomOverlay').classList.remove('active');
+        }
+        
         function formatPrice(price) {
             const num = parseFloat(price);
             return num ? num.toLocaleString('ko-KR') : '0';
         }
         
-        // 디바운스
         function debounce(func, wait) {
             let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
+            return function(...args) {
                 clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
+                timeout = setTimeout(() => func(...args), wait);
             };
         }
+        
+        // 전역 함수 등록
+        window.toggleDescription = toggleDescription;
+        window.zoomImage = zoomImage;
+        window.closeZoom = closeZoom;
+        window.closeInquiryModal = closeInquiryModal;
+        window.handleProductSelect = handleProductSelect;
         
         // 이벤트 리스너
         searchBox.addEventListener('input', debounce(handleSearch, 300));
         loadMoreBtn.addEventListener('click', () => renderProducts(false));
+        selectAllCheckbox.addEventListener('change', handleSelectAll);
+        inquiryBtn.addEventListener('click', openInquiryModal);
+        document.getElementById('imageZoomOverlay').addEventListener('click', closeZoom);
+        document.getElementById('inquiryForm').addEventListener('submit', handleInquirySubmit);
         
-        // 다시불러오기 버튼
+        // 가격 필터 칩 이벤트
+        document.querySelectorAll('[data-range]').forEach(chip => {
+            chip.addEventListener('click', () => handlePriceFilter(chip.dataset.range));
+        });
+        
+        // 다시불러오기
         reloadBtn.addEventListener('click', async () => {
             reloadBtn.disabled = true;
             reloadBtn.textContent = '불러오는 중...';
             
-            try {
-                // 필터 초기화
-                selectedCategory = 'all';
-                selectedPriceRange = 'all';
-                searchBox.value = '';
-                
-                // 칩 초기화
-                document.querySelectorAll('.category-chip').forEach(chip => {
-                    chip.classList.remove('active');
-                    if (chip.dataset.category === 'all') {
-                        chip.classList.add('active');
-                    }
-                });
-                document.querySelectorAll('.price-chip').forEach(chip => {
-                    chip.classList.remove('active');
-                    if (chip.dataset.range === 'all') {
-                        chip.classList.add('active');
-                    }
-                });
-                
-                // 데이터 다시 로드
-                await loadAllProducts();
-                
-                reloadBtn.textContent = '다시불러오기';
-            } catch (error) {
-                alert('다시 불러오기 실패: ' + error.message);
-                reloadBtn.textContent = '다시불러오기';
-            } finally {
-                reloadBtn.disabled = false;
-            }
-        });
-        
-        document.querySelectorAll('.price-chip').forEach(chip => {
-            chip.addEventListener('click', () => {
-                handlePriceFilter(chip.dataset.range);
+            selectedCategory = 'all';
+            selectedPriceRange = 'all';
+            searchBox.value = '';
+            selectedProducts.clear();
+            
+            document.querySelectorAll('.category-chip').forEach(chip => {
+                chip.classList.toggle('active', chip.dataset.category === 'all');
             });
+            document.querySelectorAll('[data-range]').forEach(chip => {
+                chip.classList.toggle('active', chip.dataset.range === 'all');
+            });
+            
+            await loadAllProducts();
+            updateSelectedCount();
+            
+            reloadBtn.textContent = '다시불러오기';
+            reloadBtn.disabled = false;
         });
-        
-        // 이미지 확대 오버레이 클릭시 닫기
-        document.getElementById('imageZoomOverlay').addEventListener('click', closeZoom);
         
         // 페이지 로드
         loadAllProducts();

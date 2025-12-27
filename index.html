@@ -339,6 +339,63 @@
             font-size: 11px;
             text-align: center;
         }
+        
+        /* 이미지 확대 기능 */
+        .image-cell {
+            position: relative;
+        }
+        
+        .product-image:hover {
+            cursor: zoom-in;
+        }
+        
+        .image-zoom-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            cursor: zoom-out;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .image-zoom-overlay.active {
+            display: flex;
+        }
+        
+        .image-zoom-content {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+        }
+        
+        /* 할인율 스타일 */
+        .price-container {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .original-price {
+            font-size: 11px;
+            color: #999;
+            text-decoration: line-through;
+        }
+        
+        .discount-badge {
+            display: inline-block;
+            background: #ff5252;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-left: 4px;
+        }
     </style>
 </head>
 <body>
@@ -411,6 +468,11 @@
                 <button id="loadMoreBtn">더 보기 (100개)</button>
             </div>
         </div>
+    </div>
+    
+    <!-- 이미지 확대 오버레이 -->
+    <div class="image-zoom-overlay" id="imageZoomOverlay">
+        <img class="image-zoom-content" id="imageZoomContent" src="" alt="">
     </div>
 
     <script>
@@ -502,7 +564,9 @@
                 allProducts = dataRows.map((row, index) => {
                     const obj = { _originalIndex: index }; // 원본 순서 저장
                     headers.forEach((header, index) => {
-                        obj[header] = row[index] || '';
+                        // 모든 값에 trim 적용
+                        const value = row[index] || '';
+                        obj[header] = typeof value === 'string' ? value.trim() : value;
                     });
                     return obj;
                 }).filter(product => product.productName && product.productName.trim());
@@ -579,12 +643,22 @@
                 const hasLongDescription = (product.productDescription || '').length > 150;
                 const descId = `desc-${Math.random().toString(36).substr(2, 9)}`;
                 
+                // 할인율 계산
+                const salesPrice = parseFloat(product.salesPrice || 0);
+                const originPrice = parseFloat(product.originPrice || 0);
+                let discountRate = 0;
+                
+                if (originPrice > 0 && salesPrice > 0 && salesPrice < originPrice) {
+                    discountRate = Math.round(((originPrice - salesPrice) / originPrice) * 100);
+                }
+                
                 return `
                     <tr>
-                        <td>
+                        <td class="image-cell">
                             ${product.thumbnailImageUrl ? 
                                 `<img class="product-image" src="${product.thumbnailImageUrl}" 
                                      alt="${product.productName}" loading="lazy"
+                                     onclick="zoomImage('${product.thumbnailImageUrl}')"
                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
                                  <div class="no-image" style="display:none">이미지<br>없음</div>` :
                                 `<div class="no-image">이미지<br>없음</div>`
@@ -614,8 +688,17 @@
                         </td>
                         <td><div class="product-origin">${product.origin || '-'}</div></td>
                         <td>
-                            <div class="product-price">${formatPrice(product.salesPrice)}원</div>
-                            <div class="tax-type">${product.taxType || ''}</div>
+                            <div class="price-container">
+                                <div>
+                                    <span class="product-price">${formatPrice(salesPrice)}원</span>
+                                    ${discountRate > 0 ? `<span class="discount-badge">${discountRate}%↓</span>` : ''}
+                                </div>
+                                ${originPrice > 0 && discountRate > 0 ? 
+                                    `<div class="original-price">인터넷최저 ${formatPrice(originPrice)}원</div>` : 
+                                    ''
+                                }
+                                <div class="tax-type">${product.taxType || ''}</div>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -651,8 +734,24 @@
             }
         }
         
+        // 이미지 확대
+        function zoomImage(src) {
+            const overlay = document.getElementById('imageZoomOverlay');
+            const img = document.getElementById('imageZoomContent');
+            img.src = src;
+            overlay.classList.add('active');
+        }
+        
+        // 이미지 확대 닫기
+        function closeZoom() {
+            const overlay = document.getElementById('imageZoomOverlay');
+            overlay.classList.remove('active');
+        }
+        
         // 전역 함수로 등록
         window.toggleDescription = toggleDescription;
+        window.zoomImage = zoomImage;
+        window.closeZoom = closeZoom;
         
         // 검색 및 필터링
         function handleSearch() {
@@ -818,6 +917,9 @@
                 handlePriceFilter(chip.dataset.range);
             });
         });
+        
+        // 이미지 확대 오버레이 클릭시 닫기
+        document.getElementById('imageZoomOverlay').addEventListener('click', closeZoom);
         
         // 페이지 로드
         loadAllProducts();

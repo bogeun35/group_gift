@@ -925,7 +925,7 @@
             modalProductCount.textContent = selectedProductsData.length;
             modalProductList.innerHTML = selectedProductsData.map(p => `
                 <div class="selected-product-item">
-                    ${p.productName} - ${formatPrice(parseFloat(String(p.salesPrice || '0').replace(/,/g, '')))}원
+                    ${p.productCode} - ${p.productName} - ${formatPrice(parseFloat(String(p.salesPrice || '0').replace(/,/g, '')))}원
                 </div>
             `).join('');
             
@@ -941,34 +941,66 @@
         async function handleInquirySubmit(e) {
             e.preventDefault();
             
-            const formData = new FormData(e.target);
-            const selectedProductsData = allProducts.filter(p => selectedProducts.has(p.productCode));
+            const submitBtn = e.target.querySelector('.btn-submit');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '전송 중...';
             
-            const data = {
-                company: formData.get('company'),
-                name: formData.get('name'),
-                phone: formData.get('phone'),
-                email: formData.get('email'),
-                message: formData.get('message'),
-                products: selectedProductsData.map(p => ({
-                    code: p.productCode,
-                    name: p.productName,
-                    price: p.salesPrice
-                }))
-            };
-            
-            console.log('문의 데이터:', data);
-            
-            // TODO: API 호출
-            // const response = await fetch('YOUR_API_ENDPOINT', {
-            //     method: 'POST',
-            //     headers: { 'Content-Type': 'application/json' },
-            //     body: JSON.stringify(data)
-            // });
-            
-            alert('문의가 접수되었습니다.\n(개발자 콘솔에서 데이터를 확인하세요)');
-            closeInquiryModal();
-            e.target.reset();
+            try {
+                const formData = new FormData(e.target);
+                const selectedProductsData = allProducts.filter(p => selectedProducts.has(p.productCode));
+                
+                // 슬랙 메시지 생성
+                const productList = selectedProductsData.map(p => 
+                    `${p.productCode} - ${p.productName}`
+                ).join('\n');
+                
+                const slackMessage = `*🎁 단체선물대장 상품 문의*
+
+*회사명:* ${formData.get('company')}
+*담당자명:* ${formData.get('name')}
+*전화번호:* ${formData.get('phone')}
+*이메일:* ${formData.get('email')}
+*문의내용:* ${formData.get('message') || '(없음)'}
+
+*선택상품:*
+${productList}`;
+
+                // 슬랙 전송
+                const slackResponse = await fetch('https://slack.com/api/chat.postMessage', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer xoxb-4769004049-7616933027200-KMrWSY9g6fwBaUgwoxRdHBIp'
+                    },
+                    body: JSON.stringify({
+                        channel: 'C0A53RP8K1S',
+                        text: slackMessage
+                    })
+                });
+                
+                const slackResult = await slackResponse.json();
+                
+                if (slackResult.ok) {
+                    alert('문의가 접수되었습니다!');
+                    closeInquiryModal();
+                    e.target.reset();
+                    
+                    // 선택 상품 초기화 (선택사항)
+                     selectedProducts.clear();
+                     localStorage.setItem(STORAGE_KEY, '[]');
+                     updateSelectedCount();
+                     renderProducts(true);
+                } else {
+                    throw new Error(slackResult.error || '슬랙 전송 실패');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`문의 전송에 실패했습니다.\n${error.message}`);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '문의하기';
+            }
         }
         
         // 유틸리티 함수들

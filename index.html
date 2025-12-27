@@ -949,49 +949,44 @@
                 const formData = new FormData(e.target);
                 const selectedProductsData = allProducts.filter(p => selectedProducts.has(p.productCode));
                 
-                // 슬랙 메시지 생성
-                const productList = selectedProductsData.map(p => 
-                    `${p.productCode} - ${p.productName}`
-                ).join('\n');
+                const data = {
+                    company: formData.get('company'),
+                    name: formData.get('name'),
+                    phone: formData.get('phone'),
+                    email: formData.get('email'),
+                    message: formData.get('message'),
+                    products: selectedProductsData.map(p => ({
+                        code: p.productCode,
+                        name: p.productName,
+                        price: p.salesPrice
+                    }))
+                };
                 
-                const slackMessage = `*🎁 단체선물대장 상품 문의*
-
-*회사명:* ${formData.get('company')}
-*담당자명:* ${formData.get('name')}
-*전화번호:* ${formData.get('phone')}
-*이메일:* ${formData.get('email')}
-*문의내용:* ${formData.get('message') || '(없음)'}
-
-*선택상품:*
-${productList}`;
-
-                // 슬랙 전송
-                const slackResponse = await fetch('https://slack.com/api/chat.postMessage', {
+                // Google Apps Script API 호출
+                const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzm7wZ-oDNuBZqTxcoEdaYktVClj-cALWW_2taEDjM_CsRW-ru8Hs6vfWjG_ZAS72Ickg/exec'; // 여기에 배포한 URL 입력
+                
+                const response = await fetch(GAS_API_URL, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                    //    'Authorization': 'Bearer xoxb-4769004049-7616933027200-KMrWSY9g6fwBaUgwoxRdHBIp'
+                        'Content-Type': 'text/plain',
                     },
-                    body: JSON.stringify({
-                       // channel: 'C0A53RP8K1S',
-                        text: slackMessage
-                    })
+                    body: JSON.stringify(data)
                 });
                 
-                const slackResult = await slackResponse.json();
+                const result = await response.json();
                 
-                if (slackResult.ok) {
+                if (result.success) {
                     alert('문의가 접수되었습니다!');
                     closeInquiryModal();
                     e.target.reset();
                     
                     // 선택 상품 초기화 (선택사항)
-                     selectedProducts.clear();
-                     localStorage.setItem(STORAGE_KEY, '[]');
-                     updateSelectedCount();
-                     renderProducts(true);
+                    // selectedProducts.clear();
+                    // localStorage.setItem(STORAGE_KEY, '[]');
+                    // updateSelectedCount();
+                    // renderProducts(true);
                 } else {
-                    throw new Error(slackResult.error || '슬랙 전송 실패');
+                    throw new Error(result.error || '문의 전송 실패');
                 }
                 
             } catch (error) {

@@ -64,6 +64,35 @@
             background: white;
         }
         
+        .price-filters {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        
+        .price-chip {
+            padding: 8px 16px;
+            border: 2px solid #ddd;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        
+        .price-chip:hover {
+            border-color: #e91e63;
+            background: #fce4ec;
+        }
+        
+        .price-chip.active {
+            background: #e91e63;
+            color: white;
+            border-color: #e91e63;
+        }
+        
         .stats {
             margin-top: 10px;
             color: #666;
@@ -216,6 +245,14 @@
                     <option value="price-desc">가격 높은순</option>
                 </select>
             </div>
+            <div class="price-filters">
+                <div class="price-chip" data-range="all">전체</div>
+                <div class="price-chip" data-range="0-30000">3만원 이하</div>
+                <div class="price-chip" data-range="30000-50000">3~5만원</div>
+                <div class="price-chip" data-range="50000-70000">5~7만원</div>
+                <div class="price-chip" data-range="70000-100000">7~10만원</div>
+                <div class="price-chip" data-range="100000-999999999">10만원 이상</div>
+            </div>
             <div class="stats" id="stats">상품을 불러오는 중...</div>
         </header>
         
@@ -234,11 +271,12 @@
     <script>
         // 구글 시트 "웹에 게시" CSV URL을 여기에 넣으세요
         // 파일 > 공유 > 웹에 게시 > 쉼표로 구분된 값(.csv) 선택
-        const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT18y-O0crmeMVOqjOeb7wUhypyw6ji_04pRuf5kL6o6QCizpGtWZ0NEUON2xCwvTdGPMI8GPHNHnT4/pub?gid=0&single=true&output=csv';
+        const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT18y-O0crmeMVOqjOeb7wUhypyw6ji_04pRuf5kL6o6QCizpGtWZ0NEUON2xCwvTdGPMI8GPHNHnT4/pub?output=csv';
         
         let allProducts = [];
         let filteredProducts = [];
         let displayedCount = 0;
+        let selectedPriceRange = 'all';
         const BATCH_SIZE = 50;
         
         const gridEl = document.getElementById('productGrid');
@@ -248,10 +286,11 @@
         const loadMoreSection = document.getElementById('loadMoreSection');
         const loadMoreBtn = document.getElementById('loadMoreBtn');
         
-        // CSV 파싱 함수 (RFC 4180 준수)
-        function parseCSV(text) {
-            const lines = [];
-            let current = '';
+        // 강력한 CSV 파싱 (RFC 4180 완전 준수 - 셀 내 엔터 처리)
+        function parseCSVRobust(text) {
+            const rows = [];
+            let currentRow = [];
+            let currentCell = '';
             let inQuotes = false;
             
             for (let i = 0; i < text.length; i++) {
@@ -260,80 +299,46 @@
                 
                 if (char === '"') {
                     if (inQuotes && nextChar === '"') {
-                        current += '"';
+                        // 이스케이프된 따옴표 ("" -> ")
+                        currentCell += '"';
                         i++; // 다음 따옴표 건너뛰기
                     } else {
+                        // 따옴표 시작/종료
                         inQuotes = !inQuotes;
                     }
                 } else if (char === ',' && !inQuotes) {
-                    lines.push(current);
-                    current = '';
-                } else if (char === '\n' && !inQuotes) {
-                    if (current || lines.length > 0) {
-                        lines.push(current);
+                    // 셀 구분자 (따옴표 밖에서만)
+                    currentRow.push(currentCell);
+                    currentCell = '';
+                } else if ((char === '\n' || char === '\r') && !inQuotes) {
+                    // 행 구분자 (따옴표 밖에서만)
+                    if (char === '\r' && nextChar === '\n') {
+                        i++; // CRLF 처리
                     }
-                    current = '';
-                } else if (char === '\r') {
-                    // CRLF 처리: \r은 무시
-                    continue;
-                } else {
-                    current += char;
-                }
-            }
-            
-            if (current) {
-                lines.push(current);
-            }
-            
-            // 행으로 분할
-            const rows = [];
-            let currentRow = [];
-            
-            for (const item of lines) {
-                currentRow.push(item);
-                // 헤더 개수에 맞춰 행 분할 (첫 행 기준)
-                if (rows.length === 0 && currentRow.length > 0) {
-                    // 첫 번째 행은 헤더로 간주
-                    continue;
-                }
-            }
-            
-            return lines;
-        }
-        
-        // 더 안전한 CSV 파싱
-        function simpleParseCSV(text) {
-            const lines = text.split('\n').filter(line => line.trim());
-            const result = [];
-            
-            for (let line of lines) {
-                const row = [];
-                let current = '';
-                let inQuotes = false;
-                
-                for (let i = 0; i < line.length; i++) {
-                    const char = line[i];
                     
-                    if (char === '"') {
-                        if (inQuotes && line[i + 1] === '"') {
-                            current += '"';
-                            i++;
-                        } else {
-                            inQuotes = !inQuotes;
+                    if (currentCell || currentRow.length > 0) {
+                        currentRow.push(currentCell);
+                        if (currentRow.some(cell => cell.trim())) {
+                            rows.push(currentRow);
                         }
-                    } else if (char === ',' && !inQuotes) {
-                        row.push(current.trim());
-                        current = '';
-                    } else {
-                        current += char;
+                        currentRow = [];
+                        currentCell = '';
                     }
+                } else {
+                    // 일반 문자 (따옴표 안의 엔터도 포함)
+                    currentCell += char;
                 }
-                
-                row.push(current.trim());
-                result.push(row);
             }
             
-            return result;
+            // 마지막 셀/행 처리
+            if (currentCell || currentRow.length > 0) {
+                currentRow.push(currentCell);
+                if (currentRow.some(cell => cell.trim())) {
+                    rows.push(currentRow);
+                }
+            }
+            
+            return rows;
         }
         
         // 데이터 로드
@@ -342,8 +347,8 @@
                 const response = await fetch(SHEET_CSV_URL);
                 const csvText = await response.text();
                 
-                // CSV 파싱
-                const rows = simpleParseCSV(csvText);
+                // 강력한 CSV 파싱 (셀 내 엔터 처리)
+                const rows = parseCSVRobust(csvText);
                 
                 if (rows.length < 2) {
                     throw new Error('데이터가 없습니다');
@@ -353,6 +358,9 @@
                 const headers = rows[0];
                 const dataRows = rows.slice(1);
                 
+                console.log('헤더:', headers);
+                console.log('첫 3개 행:', dataRows.slice(0, 3));
+                
                 // 객체 배열로 변환
                 allProducts = dataRows.map(row => {
                     const obj = {};
@@ -360,7 +368,9 @@
                         obj[header] = row[index] || '';
                     });
                     return obj;
-                });
+                }).filter(product => product.productName && product.productName.trim()); // 빈 행 제거
+                
+                console.log('총 상품 수:', allProducts.length);
                 
                 filteredProducts = [...allProducts];
                 
@@ -426,14 +436,15 @@
             }
         }
         
-        // 검색
+        // 검색 및 필터링
         function handleSearch() {
             const query = searchBox.value.toLowerCase().trim();
             
-            if (!query) {
-                filteredProducts = [...allProducts];
-            } else {
-                filteredProducts = allProducts.filter(product => {
+            // 텍스트 검색
+            let results = allProducts;
+            
+            if (query) {
+                results = results.filter(product => {
                     return (
                         (product.productName || '').toLowerCase().includes(query) ||
                         (product.productComposition || '').toLowerCase().includes(query) ||
@@ -442,9 +453,35 @@
                 });
             }
             
+            // 가격대 필터링
+            if (selectedPriceRange !== 'all') {
+                const [min, max] = selectedPriceRange.split('-').map(Number);
+                results = results.filter(product => {
+                    const price = parseFloat(product.salesPrice || 0);
+                    return price >= min && price <= max;
+                });
+            }
+            
+            filteredProducts = results;
             applySorting();
             updateStats();
             renderProducts(true);
+        }
+        
+        // 가격대 필터 변경
+        function handlePriceFilter(range) {
+            selectedPriceRange = range;
+            
+            // 칩 활성화 상태 업데이트
+            document.querySelectorAll('.price-chip').forEach(chip => {
+                if (chip.dataset.range === range) {
+                    chip.classList.add('active');
+                } else {
+                    chip.classList.remove('active');
+                }
+            });
+            
+            handleSearch(); // 검색 다시 실행
         }
         
         // 정렬
@@ -506,8 +543,18 @@
         });
         loadMoreBtn.addEventListener('click', () => renderProducts(false));
         
+        // 가격대 필터 칩 클릭 이벤트
+        document.querySelectorAll('.price-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                handlePriceFilter(chip.dataset.range);
+            });
+        });
+        
         // 페이지 로드
         loadAllProducts();
+        
+        // 초기 '전체' 칩 활성화
+        document.querySelector('.price-chip[data-range="all"]').classList.add('active');
     </script>
 </body>
 </html>

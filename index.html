@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>상품 카탈로그</title>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     <style>
         * {
             margin: 0;
@@ -12,13 +13,13 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: "Pretendard", -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: #f5f5f5;
             padding: 20px;
         }
         
         .container {
-            max-width: 1600px;
+            max-width: 1800px;
             margin: 0 auto;
         }
         
@@ -423,21 +424,21 @@
 <body>
     <div class="container">
         <header>
-            <h1>🎁 상품 카탈로그</h1>
+            <h1>상품 카탈로그</h1>
             <div class="controls">
                 <input 
                     type="text" 
                     id="searchBox" 
                     class="search-box" 
-                    placeholder="상품코드, 상품명, 카테고리, 구성으로 검색..."
+                    placeholder="검색"
                 >
                 <button id="reloadBtn" style="padding: 10px 20px; background: #4caf50; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; white-space: nowrap;">
-                    🔄 다시불러오기
+                    다시불러오기
                 </button>
             </div>
             
             <div class="filter-section">
-                <div class="filter-label">📂 카테고리</div>
+                <div class="filter-label">카테고리</div>
                 <div class="category-filters" id="categoryFilters">
                     <div class="category-chip active" data-category="all">전체</div>
                     <!-- 동적으로 추가됨 -->
@@ -445,7 +446,7 @@
             </div>
             
             <div class="filter-section">
-                <div class="filter-label">💰 가격대</div>
+                <div class="filter-label">가격대</div>
                 <div class="price-filters">
                     <div class="price-chip active" data-range="all">전체</div>
                     <div class="price-chip" data-range="0-30000">3만원 이하</div>
@@ -604,6 +605,11 @@
                 
                 console.log('카테고리 목록:', categories);
                 
+                // 기존 카테고리 칩 제거 (전체 칩만 남김)
+                const allChip = categoryFilters.querySelector('[data-category="all"]');
+                categoryFilters.innerHTML = '';
+                categoryFilters.appendChild(allChip);
+                
                 // 카테고리 필터 칩 동적 생성
                 const categoryChipsHTML = categories.map(cat => 
                     `<div class="category-chip" data-category="${cat}">${cat}</div>`
@@ -673,8 +679,9 @@
                     .trim();
                 
                 // 할인율 계산 - 문자열을 숫자로 변환
+                // originPrice 또는 oralginPrice 둘 다 지원
                 const salesPrice = parseFloat(String(product.salesPrice || '0').replace(/,/g, ''));
-                const originPrice = parseFloat(String(product.originPrice || '0').replace(/,/g, ''));
+                const originPrice = parseFloat(String(product.originPrice || product.oralginPrice || '0').replace(/,/g, ''));
                 let discountRate = 0;
                 
                 console.log('Price check:', product.productName, 'sales:', salesPrice, 'origin:', originPrice);
@@ -731,7 +738,7 @@
                                     ${discountRate > 0 ? `<span class="discount-badge">${discountRate}%↓</span>` : ''}
                                 </div>
                                 ${originPrice > 0 && discountRate > 0 ? 
-                                    `<div class="original-price">인터넷최저 ${formatPrice(originPrice)}원</div>` : 
+                                    `<div class="original-price">${formatPrice(originPrice)}원</div>` : 
                                     ''
                                 }
                             </div>
@@ -914,7 +921,7 @@
         // 다시불러오기 버튼
         reloadBtn.addEventListener('click', async () => {
             reloadBtn.disabled = true;
-            reloadBtn.textContent = '🔄 불러오는 중...';
+            reloadBtn.textContent = '불러오는 중...';
             
             try {
                 // 필터 초기화
@@ -939,10 +946,10 @@
                 // 데이터 다시 로드
                 await loadAllProducts();
                 
-                reloadBtn.textContent = '🔄 다시불러오기';
+                reloadBtn.textContent = '다시불러오기';
             } catch (error) {
                 alert('다시 불러오기 실패: ' + error.message);
-                reloadBtn.textContent = '🔄 다시불러오기';
+                reloadBtn.textContent = '다시불러오기';
             } finally {
                 reloadBtn.disabled = false;
             }

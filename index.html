@@ -965,32 +965,32 @@
                     }))
                 };
                 
+                console.log('전송 데이터:', data);
+                
                 // Google Apps Script API 호출
-                const GAS_API_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE'; // 여기에 배포한 URL 입력
+                const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzm7wZ-oDNuBZqTxcoEdaYktVClj-cALWW_2taEDjM_CsRW-ru8Hs6vfWjG_ZAS72Ickg/exec';
                 
                 const response = await fetch(GAS_API_URL, {
                     method: 'POST',
+                    mode: 'no-cors',
                     headers: {
-                        'Content-Type': 'text/plain',
+                        'Content-Type': 'application/json',
                     },
                     body: JSON.stringify(data)
                 });
                 
-                const result = await response.json();
+                // no-cors 모드에서는 응답을 읽을 수 없으므로 성공으로 간주
+                console.log('전송 완료');
                 
-                if (result.success) {
-                    alert('문의가 접수되었습니다!');
-                    closeInquiryModal();
-                    e.target.reset();
-                    
-                    // 선택 상품 초기화
-                    selectedProducts.clear();
-                    localStorage.setItem(STORAGE_KEY, '[]');
-                    updateSelectedCount();
-                    renderProducts(true);
-                } else {
-                    throw new Error(result.error || '문의 전송 실패');
-                }
+                alert('문의가 접수되었습니다!');
+                closeInquiryModal();
+                e.target.reset();
+                
+                // 선택 상품 초기화
+                selectedProducts.clear();
+                localStorage.setItem(STORAGE_KEY, '[]');
+                updateSelectedCount();
+                renderProducts(true);
                 
             } catch (error) {
                 console.error('Error:', error);

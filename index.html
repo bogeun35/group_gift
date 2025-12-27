@@ -232,7 +232,6 @@
             -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            white-space: pre-wrap;
         }
         
         .product-description.expanded {
@@ -643,6 +642,12 @@
                 const hasLongDescription = (product.productDescription || '').length > 150;
                 const descId = `desc-${Math.random().toString(36).substr(2, 9)}`;
                 
+                // 설명에서 엔터를 공백으로 변환 (빈 칸 방지)
+                const description = (product.productDescription || '-')
+                    .replace(/\n+/g, ' ')  // 엔터를 공백으로
+                    .replace(/\s+/g, ' ')  // 연속된 공백을 하나로
+                    .trim();
+                
                 // 할인율 계산
                 const salesPrice = parseFloat(product.salesPrice || 0);
                 const originPrice = parseFloat(product.originPrice || 0);
@@ -679,7 +684,7 @@
                         </td>
                         <td>
                             <div class="product-description ${hasLongDescription ? '' : 'expanded'}" id="${descId}">
-                                ${product.productDescription || '-'}
+                                ${description}
                             </div>
                             ${hasLongDescription ? 
                                 `<span class="expand-btn" onclick="toggleDescription('${descId}')">더보기</span>` : 

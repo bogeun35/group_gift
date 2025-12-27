@@ -981,10 +981,10 @@
                     e.target.reset();
                     
                     // 선택 상품 초기화 (선택사항)
-                    // selectedProducts.clear();
-                    // localStorage.setItem(STORAGE_KEY, '[]');
-                    // updateSelectedCount();
-                    // renderProducts(true);
+                     selectedProducts.clear();
+                     localStorage.setItem(STORAGE_KEY, '[]');
+                     updateSelectedCount();
+                     renderProducts(true);
                 } else {
                     throw new Error(result.error || '문의 전송 실패');
                 }

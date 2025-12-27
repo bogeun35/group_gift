@@ -22,15 +22,57 @@
             margin: 0 auto;
         }
         
+        header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
         h1 {
-            text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             color: #333;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .search-box:focus {
+            outline: none;
+            border-color: #e91e63;
+        }
+        
+        select {
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+        }
+        
+        .stats {
+            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
         }
         
         .product-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 20px;
         }
         
@@ -39,7 +81,8 @@
             border-radius: 8px;
             overflow: hidden;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
         }
         
         .product-card:hover {
@@ -49,7 +92,7 @@
         
         .product-image {
             width: 100%;
-            height: 250px;
+            height: 200px;
             object-fit: cover;
             background: #f0f0f0;
         }
@@ -59,26 +102,24 @@
         }
         
         .product-name {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
             margin-bottom: 8px;
             color: #222;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
         
         .product-composition {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 12px;
-        }
-        
-        .product-description {
             font-size: 13px;
-            color: #555;
-            line-height: 1.5;
-            margin-bottom: 12px;
-            max-height: 100px;
+            color: #666;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
             overflow: hidden;
-            text-overflow: ellipsis;
         }
         
         .product-meta {
@@ -90,89 +131,383 @@
         }
         
         .product-origin {
-            font-size: 13px;
+            font-size: 12px;
             color: #888;
         }
         
         .product-price {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
             color: #e91e63;
         }
         
         .loading {
             text-align: center;
-            padding: 40px;
-            font-size: 18px;
+            padding: 60px 20px;
+            font-size: 16px;
             color: #666;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #e91e63;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         
         .error {
             text-align: center;
             padding: 40px;
             color: #d32f2f;
+            background: #ffebee;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .load-more {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .load-more button {
+            padding: 12px 30px;
+            background: #e91e63;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .load-more button:hover {
+            background: #c2185b;
+        }
+        
+        .load-more button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎁 스팸 상품 카탈로그</h1>
+        <header>
+            <h1>🎁 상품 카탈로그</h1>
+            <div class="controls">
+                <input 
+                    type="text" 
+                    id="searchBox" 
+                    class="search-box" 
+                    placeholder="상품명, 구성, 원산지로 검색..."
+                >
+                <select id="sortSelect">
+                    <option value="name-asc">이름순 (가나다)</option>
+                    <option value="name-desc">이름순 (역순)</option>
+                    <option value="price-asc">가격 낮은순</option>
+                    <option value="price-desc">가격 높은순</option>
+                </select>
+            </div>
+            <div class="stats" id="stats">상품을 불러오는 중...</div>
+        </header>
+        
         <div id="productGrid" class="product-grid">
-            <div class="loading">상품 정보를 불러오는 중...</div>
+            <div class="loading">
+                <div class="spinner"></div>
+                상품 정보를 불러오는 중...
+            </div>
+        </div>
+        
+        <div class="load-more" id="loadMoreSection" style="display: none;">
+            <button id="loadMoreBtn">더 보기 (50개)</button>
         </div>
     </div>
 
     <script>
-        const API_URL = 'https://redash.sikdae.com/api/queries/1331/results.json?api_key=oQHYDjwQqVYeAqHkIwe17mwzPXqiYyLL1agB0jFo';
+        // 구글 시트 "웹에 게시" CSV URL을 여기에 넣으세요
+        // 파일 > 공유 > 웹에 게시 > 쉼표로 구분된 값(.csv) 선택
+        const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT18y-O0crmeMVOqjOeb7wUhypyw6ji_04pRuf5kL6o6QCizpGtWZ0NEUON2xCwvTdGPMI8GPHNHnT4/pub?output=csv';
         
-        async function loadProducts() {
-            const gridEl = document.getElementById('productGrid');
+        let allProducts = [];
+        let filteredProducts = [];
+        let displayedCount = 0;
+        const BATCH_SIZE = 50;
+        
+        const gridEl = document.getElementById('productGrid');
+        const searchBox = document.getElementById('searchBox');
+        const sortSelect = document.getElementById('sortSelect');
+        const statsEl = document.getElementById('stats');
+        const loadMoreSection = document.getElementById('loadMoreSection');
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+        
+        // CSV 파싱 함수 (RFC 4180 준수)
+        function parseCSV(text) {
+            const lines = [];
+            let current = '';
+            let inQuotes = false;
             
-            try {
-                const response = await fetch(API_URL);
-                const data = await response.json();
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const nextChar = text[i + 1];
                 
-                // Redash API 응답 구조: data.query_result.data.rows
-                const products = data.query_result.data.rows;
+                if (char === '"') {
+                    if (inQuotes && nextChar === '"') {
+                        current += '"';
+                        i++; // 다음 따옴표 건너뛰기
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    lines.push(current);
+                    current = '';
+                } else if (char === '\n' && !inQuotes) {
+                    if (current || lines.length > 0) {
+                        lines.push(current);
+                    }
+                    current = '';
+                } else if (char === '\r') {
+                    // CRLF 처리: \r은 무시
+                    continue;
+                } else {
+                    current += char;
+                }
+            }
+            
+            if (current) {
+                lines.push(current);
+            }
+            
+            // 행으로 분할
+            const rows = [];
+            let currentRow = [];
+            
+            for (const item of lines) {
+                currentRow.push(item);
+                // 헤더 개수에 맞춰 행 분할 (첫 행 기준)
+                if (rows.length === 0 && currentRow.length > 0) {
+                    // 첫 번째 행은 헤더로 간주
+                    continue;
+                }
+            }
+            
+            return lines;
+        }
+        
+        // 더 안전한 CSV 파싱
+        function simpleParseCSV(text) {
+            const lines = text.split('\n').filter(line => line.trim());
+            const result = [];
+            
+            for (let line of lines) {
+                const row = [];
+                let current = '';
+                let inQuotes = false;
                 
-                if (products.length === 0) {
-                    gridEl.innerHTML = '<div class="error">상품이 없습니다.</div>';
-                    return;
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    
+                    if (char === '"') {
+                        if (inQuotes && line[i + 1] === '"') {
+                            current += '"';
+                            i++;
+                        } else {
+                            inQuotes = !inQuotes;
+                        }
+                    } else if (char === ',' && !inQuotes) {
+                        row.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
                 }
                 
-                // 상품 카드 렌더링
-                gridEl.innerHTML = products.map(product => `
-                    <div class="product-card">
-                        <img 
-                            class="product-image" 
-                            src="${product.thumbnailImageUrl || 'https://via.placeholder.com/350x250?text=No+Image'}"
-                            alt="${product.productName}"
-                            onerror="this.src='https://via.placeholder.com/350x250?text=Image+Error'"
-                        >
-                        <div class="product-info">
-                            <div class="product-name">${product.productName}</div>
-                            <div class="product-composition">${product.productComposition || ''}</div>
-                            <div class="product-description">${product.productDescription || ''}</div>
-                            <div class="product-meta">
-                                <span class="product-origin">${product.origin || ''}</span>
-                                <span class="product-price">${formatPrice(product.salesPrice)}원</span>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
+                row.push(current.trim());
+                result.push(row);
+            }
+            
+            return result;
+        }
+        
+        // 데이터 로드
+        async function loadAllProducts() {
+            try {
+                const response = await fetch(SHEET_CSV_URL);
+                const csvText = await response.text();
+                
+                // CSV 파싱
+                const rows = simpleParseCSV(csvText);
+                
+                if (rows.length < 2) {
+                    throw new Error('데이터가 없습니다');
+                }
+                
+                // 헤더와 데이터 분리
+                const headers = rows[0];
+                const dataRows = rows.slice(1);
+                
+                // 객체 배열로 변환
+                allProducts = dataRows.map(row => {
+                    const obj = {};
+                    headers.forEach((header, index) => {
+                        obj[header] = row[index] || '';
+                    });
+                    return obj;
+                });
+                
+                filteredProducts = [...allProducts];
+                
+                updateStats();
+                renderProducts(true);
                 
             } catch (error) {
                 console.error('Error loading products:', error);
-                gridEl.innerHTML = `<div class="error">상품을 불러오는데 실패했습니다.<br>${error.message}</div>`;
+                gridEl.innerHTML = `<div class="error">상품을 불러오는데 실패했습니다.<br>${error.message}<br><br>구글 시트가 "웹에 게시"되었는지 확인해주세요.</div>`;
             }
         }
         
-        function formatPrice(price) {
-            return price ? price.toLocaleString('ko-KR') : '0';
+        // 상품 렌더링
+        function renderProducts(reset = false) {
+            if (reset) {
+                displayedCount = 0;
+                gridEl.innerHTML = '';
+            }
+            
+            const start = displayedCount;
+            const end = Math.min(displayedCount + BATCH_SIZE, filteredProducts.length);
+            const batch = filteredProducts.slice(start, end);
+            
+            if (batch.length === 0 && reset) {
+                gridEl.innerHTML = '<div class="loading">검색 결과가 없습니다.</div>';
+                loadMoreSection.style.display = 'none';
+                return;
+            }
+            
+            const html = batch.map(product => `
+                <div class="product-card">
+                    <img 
+                        class="product-image" 
+                        src="${product.thumbnailImageUrl || 'https://via.placeholder.com/300x200?text=No+Image'}"
+                        alt="${product.productName || '상품'}"
+                        loading="lazy"
+                        onerror="this.src='https://via.placeholder.com/300x200?text=Image+Error'"
+                    >
+                    <div class="product-info">
+                        <div class="product-name">${product.productName || '상품명 없음'}</div>
+                        <div class="product-composition">${product.productComposition || ''}</div>
+                        <div class="product-meta">
+                            <span class="product-origin">${product.origin || ''}</span>
+                            <span class="product-price">${formatPrice(product.salesPrice)}원</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            if (reset) {
+                gridEl.innerHTML = html;
+            } else {
+                gridEl.insertAdjacentHTML('beforeend', html);
+            }
+            
+            displayedCount = end;
+            
+            if (displayedCount < filteredProducts.length) {
+                loadMoreSection.style.display = 'block';
+                loadMoreBtn.textContent = `더 보기 (${Math.min(BATCH_SIZE, filteredProducts.length - displayedCount)}개)`;
+            } else {
+                loadMoreSection.style.display = 'none';
+            }
         }
         
-        // 페이지 로드시 상품 불러오기
-        loadProducts();
+        // 검색
+        function handleSearch() {
+            const query = searchBox.value.toLowerCase().trim();
+            
+            if (!query) {
+                filteredProducts = [...allProducts];
+            } else {
+                filteredProducts = allProducts.filter(product => {
+                    return (
+                        (product.productName || '').toLowerCase().includes(query) ||
+                        (product.productComposition || '').toLowerCase().includes(query) ||
+                        (product.origin || '').toLowerCase().includes(query)
+                    );
+                });
+            }
+            
+            applySorting();
+            updateStats();
+            renderProducts(true);
+        }
+        
+        // 정렬
+        function applySorting() {
+            const sortValue = sortSelect.value;
+            
+            filteredProducts.sort((a, b) => {
+                switch(sortValue) {
+                    case 'name-asc':
+                        return (a.productName || '').localeCompare(b.productName || '', 'ko');
+                    case 'name-desc':
+                        return (b.productName || '').localeCompare(a.productName || '', 'ko');
+                    case 'price-asc':
+                        return parseFloat(a.salesPrice || 0) - parseFloat(b.salesPrice || 0);
+                    case 'price-desc':
+                        return parseFloat(b.salesPrice || 0) - parseFloat(a.salesPrice || 0);
+                    default:
+                        return 0;
+                }
+            });
+        }
+        
+        // 통계 업데이트
+        function updateStats() {
+            const total = allProducts.length;
+            const showing = filteredProducts.length;
+            
+            if (searchBox.value.trim()) {
+                statsEl.textContent = `전체 ${total.toLocaleString()}개 중 ${showing.toLocaleString()}개 검색됨`;
+            } else {
+                statsEl.textContent = `전체 ${total.toLocaleString()}개 상품`;
+            }
+        }
+        
+        // 가격 포맷팅
+        function formatPrice(price) {
+            const num = parseFloat(price);
+            return num ? num.toLocaleString('ko-KR') : '0';
+        }
+        
+        // 디바운스
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
+        // 이벤트 리스너
+        searchBox.addEventListener('input', debounce(handleSearch, 300));
+        sortSelect.addEventListener('change', () => {
+            applySorting();
+            renderProducts(true);
+        });
+        loadMoreBtn.addEventListener('click', () => renderProducts(false));
+        
+        // 페이지 로드
+        loadAllProducts();
     </script>
 </body>
 </html>

@@ -395,6 +395,29 @@
             font-weight: 700;
             margin-left: 4px;
         }
+        
+        .tax-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .tax-badge.과세 {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .tax-badge.면세 {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+        
+        .tax-badge.비과세 {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
     </style>
 </head>
 <body>
@@ -448,12 +471,13 @@
                             <th style="width: 150px;">구성</th>
                             <th style="min-width: 300px;">상세설명</th>
                             <th style="width: 100px;">원산지</th>
-                            <th style="width: 100px;">가격</th>
+                            <th style="width: 80px;">과세</th>
+                            <th style="width: 120px;">가격</th>
                         </tr>
                     </thead>
                     <tbody id="productTableBody">
                         <tr>
-                            <td colspan="8">
+                            <td colspan="9">
                                 <div class="loading">
                                     <div class="spinner"></div>
                                     상품 정보를 불러오는 중...
@@ -603,7 +627,7 @@
                 console.error('Error loading products:', error);
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="8">
+                        <td colspan="9">
                             <div class="error">
                                 상품을 불러오는데 실패했습니다.<br>
                                 ${error.message}<br><br>
@@ -629,7 +653,7 @@
             if (batch.length === 0 && reset) {
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="8">
+                        <td colspan="9">
                             <div class="loading">검색 결과가 없습니다.</div>
                         </td>
                     </tr>
@@ -648,12 +672,14 @@
                     .replace(/\s+/g, ' ')  // 연속된 공백을 하나로
                     .trim();
                 
-                // 할인율 계산
-                const salesPrice = parseFloat(product.salesPrice || 0);
-                const originPrice = parseFloat(product.originPrice || 0);
+                // 할인율 계산 - 문자열을 숫자로 변환
+                const salesPrice = parseFloat(String(product.salesPrice || '0').replace(/,/g, ''));
+                const originPrice = parseFloat(String(product.originPrice || '0').replace(/,/g, ''));
                 let discountRate = 0;
                 
-                if (originPrice > 0 && salesPrice > 0 && salesPrice < originPrice) {
+                console.log('Price check:', product.productName, 'sales:', salesPrice, 'origin:', originPrice);
+                
+                if (originPrice > 0 && salesPrice > 0 && originPrice > salesPrice) {
                     discountRate = Math.round(((originPrice - salesPrice) / originPrice) * 100);
                 }
                 
@@ -693,6 +719,12 @@
                         </td>
                         <td><div class="product-origin">${product.origin || '-'}</div></td>
                         <td>
+                            ${product.taxType ? 
+                                `<span class="tax-badge ${product.taxType}">${product.taxType}</span>` : 
+                                '-'
+                            }
+                        </td>
+                        <td>
                             <div class="price-container">
                                 <div>
                                     <span class="product-price">${formatPrice(salesPrice)}원</span>
@@ -702,7 +734,6 @@
                                     `<div class="original-price">인터넷최저 ${formatPrice(originPrice)}원</div>` : 
                                     ''
                                 }
-                                <div class="tax-type">${product.taxType || ''}</div>
                             </div>
                         </td>
                     </tr>

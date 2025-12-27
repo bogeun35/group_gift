@@ -189,8 +189,8 @@
         }
         
         .product-image {
-            width: 60px;
-            height: 60px;
+            width: 80px;
+            height: 80px;
             object-fit: cover;
             border-radius: 4px;
             background: #f0f0f0;
@@ -228,7 +228,6 @@
         .product-description {
             color: #555;
             line-height: 1.5;
-            max-width: 400px;
             display: -webkit-box;
             -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
@@ -261,6 +260,11 @@
             font-weight: 700;
             color: #e91e63;
             white-space: nowrap;
+        }
+        
+        /* 가격 컬럼 우측 정렬 */
+        td:last-child {
+            text-align: right;
         }
         
         .tax-type {
@@ -328,8 +332,8 @@
         }
         
         .no-image {
-            width: 60px;
-            height: 60px;
+            width: 80px;
+            height: 80px;
             background: #f0f0f0;
             border-radius: 4px;
             display: flex;
@@ -465,15 +469,15 @@
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 80px;">이미지</th>
+                            <th style="width: 100px;">이미지</th>
                             <th style="width: 100px;">상품코드</th>
                             <th style="width: 120px;">카테고리</th>
                             <th style="width: 200px;">상품명</th>
                             <th style="width: 150px;">구성</th>
-                            <th style="min-width: 300px;">상세설명</th>
+                            <th style="width: auto;">상세설명</th>
                             <th style="width: 100px;">원산지</th>
                             <th style="width: 80px;">과세</th>
-                            <th style="width: 120px;">가격</th>
+                            <th style="width: 120px; text-align: right;">가격</th>
                         </tr>
                     </thead>
                     <tbody id="productTableBody">

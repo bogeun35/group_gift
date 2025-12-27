@@ -127,6 +127,7 @@
             vertical-align: top;
         }
         
+        tbody tr { cursor: pointer; }
         tbody tr:hover { background: #f8f9fa; }
         td:last-child { text-align: right; }
         
@@ -388,7 +389,6 @@
             <h1>단체선물대장 상품카탈로그</h1>
             <div class="controls">
                 <input type="text" id="searchBox" class="search-box" placeholder="검색">
-                <button id="reloadBtn" class="btn-reload">다시불러오기</button>
             </div>
             
             <div class="filter-section">
@@ -410,6 +410,15 @@
                     <div class="chip" data-range="150000-200000">15~20만원</div>
                     <div class="chip" data-range="200000-300000">20~30만원</div>
                     <div class="chip" data-range="300000-999999999">30만원 이상</div>
+                </div>
+            </div>
+            
+            <div class="filter-section">
+                <div class="filter-label">선택 상품</div>
+                <div class="filter-chips">
+                    <div class="chip" id="selectedFilterChip" onclick="toggleSelectedFilter()">
+                        선택한 상품만 보기 (<span id="selectedFilterCount">0</span>)
+                    </div>
                 </div>
             </div>
             
@@ -515,18 +524,19 @@
 
     <script>
         const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT18y-O0crmeMVOqjOeb7wUhypyw6ji_04pRuf5kL6o6QCizpGtWZ0NEUON2xCwvTdGPMI8GPHNHnT4/pub?output=csv';
+        const STORAGE_KEY = 'selected_products';
         
         let allProducts = [];
         let filteredProducts = [];
-        let selectedProducts = new Set();
+        let selectedProducts = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'));
         let displayedCount = 0;
         let selectedPriceRange = 'all';
         let selectedCategory = 'all';
+        let showOnlySelected = false;
         const BATCH_SIZE = 100;
         
         const tableBody = document.getElementById('productTableBody');
         const searchBox = document.getElementById('searchBox');
-        const reloadBtn = document.getElementById('reloadBtn');
         const statsEl = document.getElementById('stats');
         const selectedCountEl = document.getElementById('selectedCount');
         const inquiryBtn = document.getElementById('inquiryBtn');
@@ -622,6 +632,7 @@
                 });
                 
                 filteredProducts = [...allProducts];
+                updateSelectedCount(); // 로컬스토리지에서 불러온 선택 상품 카운트 업데이트
                 updateStats();
                 renderProducts(true);
                 
@@ -670,14 +681,16 @@
                     discountRate = Math.round(((originPrice - salesPrice) / originPrice) * 100);
                 }
                 
-                const productId = product.productCode || product._originalIndex;
-                const isChecked = selectedProducts.has(productId);
+                const productCode = product.productCode;
+                const isChecked = selectedProducts.has(productCode);
+                const rowId = `row-${productCode}`.replace(/[^a-zA-Z0-9-]/g, '_');
                 
                 return `
-                    <tr>
-                        <td>
+                    <tr onclick="handleRowClick(event, document.querySelector('#checkbox-${rowId}'))">
+                        <td onclick="event.stopPropagation()">
                             <input type="checkbox" class="product-checkbox" 
-                                   data-product-id="${productId}" 
+                                   id="checkbox-${rowId}"
+                                   data-product-id="${productCode}" 
                                    ${isChecked ? 'checked' : ''}
                                    onchange="handleProductSelect(this)">
                         </td>
@@ -774,10 +787,23 @@
                 });
             }
             
+            // 선택한 상품만 보기 필터
+            if (showOnlySelected) {
+                results = results.filter(product => selectedProducts.has(product.productCode));
+            }
+            
             filteredProducts = results;
             filteredProducts.sort((a, b) => a._originalIndex - b._originalIndex);
             updateStats();
             renderProducts(true);
+        }
+        
+        // 선택한 상품만 보기 토글
+        function toggleSelectedFilter() {
+            showOnlySelected = !showOnlySelected;
+            const chip = document.getElementById('selectedFilterChip');
+            chip.classList.toggle('active', showOnlySelected);
+            handleSearch();
         }
         
         // 카테고리 필터
@@ -800,14 +826,29 @@
         
         // 상품 선택
         function handleProductSelect(checkbox) {
-            const productId = checkbox.dataset.productId;
+            const productCode = checkbox.dataset.productId;
+            
             if (checkbox.checked) {
-                selectedProducts.add(productId);
+                selectedProducts.add(productCode);
             } else {
-                selectedProducts.delete(productId);
+                selectedProducts.delete(productCode);
             }
+            
+            // 로컬스토리지에 저장
+            localStorage.setItem(STORAGE_KEY, JSON.stringify([...selectedProducts]));
+            
             updateSelectedCount();
             updateSelectAllState();
+        }
+        
+        // 행 클릭 시 체크박스 토글
+        function handleRowClick(event, checkbox) {
+            if (event.target.type === 'checkbox') return;
+            if (event.target.classList.contains('product-image')) return;
+            if (event.target.classList.contains('expand-btn')) return;
+            
+            checkbox.checked = !checkbox.checked;
+            handleProductSelect(checkbox);
         }
         
         // 전체 선택
@@ -817,14 +858,16 @@
             
             checkboxes.forEach(cb => {
                 cb.checked = isChecked;
-                const productId = cb.dataset.productId;
+                const productCode = cb.dataset.productId;
+                
                 if (isChecked) {
-                    selectedProducts.add(productId);
+                    selectedProducts.add(productCode);
                 } else {
-                    selectedProducts.delete(productId);
+                    selectedProducts.delete(productCode);
                 }
             });
             
+            localStorage.setItem(STORAGE_KEY, JSON.stringify([...selectedProducts]));
             updateSelectedCount();
         }
         
@@ -840,6 +883,7 @@
         function updateSelectedCount() {
             const count = selectedProducts.size;
             selectedCountEl.innerHTML = `선택: <span class="selected-info">${count}</span>개`;
+            document.getElementById('selectedFilterCount').textContent = count;
             inquiryBtn.disabled = count === 0;
         }
         
@@ -876,9 +920,7 @@
             const modalProductCount = document.getElementById('modalProductCount');
             const modalProductList = document.getElementById('modalProductList');
             
-            const selectedProductsData = allProducts.filter(p => 
-                selectedProducts.has(p.productCode || p._originalIndex)
-            );
+            const selectedProductsData = allProducts.filter(p => selectedProducts.has(p.productCode));
             
             modalProductCount.textContent = selectedProductsData.length;
             modalProductList.innerHTML = selectedProductsData.map(p => `
@@ -900,9 +942,7 @@
             e.preventDefault();
             
             const formData = new FormData(e.target);
-            const selectedProductsData = allProducts.filter(p => 
-                selectedProducts.has(p.productCode || p._originalIndex)
-            );
+            const selectedProductsData = allProducts.filter(p => selectedProducts.has(p.productCode));
             
             const data = {
                 company: formData.get('company'),
@@ -920,26 +960,12 @@
             console.log('문의 데이터:', data);
             
             // TODO: API 호출
-            // try {
-            //     const response = await fetch('YOUR_API_ENDPOINT', {
-            //         method: 'POST',
-            //         headers: { 'Content-Type': 'application/json' },
-            //         body: JSON.stringify(data)
-            //     });
-            //     
-            //     if (response.ok) {
-            //         alert('문의가 접수되었습니다.');
-            //         closeInquiryModal();
-            //         e.target.reset();
-            //     } else {
-            //         alert('문의 접수에 실패했습니다.');
-            //     }
-            // } catch (error) {
-            //     console.error('Error:', error);
-            //     alert('오류가 발생했습니다.');
-            // }
+            // const response = await fetch('YOUR_API_ENDPOINT', {
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify(data)
+            // });
             
-            // 임시: 콘솔 출력 후 완료 메시지
             alert('문의가 접수되었습니다.\n(개발자 콘솔에서 데이터를 확인하세요)');
             closeInquiryModal();
             e.target.reset();
@@ -983,6 +1009,8 @@
         window.closeZoom = closeZoom;
         window.closeInquiryModal = closeInquiryModal;
         window.handleProductSelect = handleProductSelect;
+        window.handleRowClick = handleRowClick;
+        window.toggleSelectedFilter = toggleSelectedFilter;
         
         // 이벤트 리스너
         searchBox.addEventListener('input', debounce(handleSearch, 300));
@@ -995,30 +1023,6 @@
         // 가격 필터 칩 이벤트
         document.querySelectorAll('[data-range]').forEach(chip => {
             chip.addEventListener('click', () => handlePriceFilter(chip.dataset.range));
-        });
-        
-        // 다시불러오기
-        reloadBtn.addEventListener('click', async () => {
-            reloadBtn.disabled = true;
-            reloadBtn.textContent = '불러오는 중...';
-            
-            selectedCategory = 'all';
-            selectedPriceRange = 'all';
-            searchBox.value = '';
-            selectedProducts.clear();
-            
-            document.querySelectorAll('.category-chip').forEach(chip => {
-                chip.classList.toggle('active', chip.dataset.category === 'all');
-            });
-            document.querySelectorAll('[data-range]').forEach(chip => {
-                chip.classList.toggle('active', chip.dataset.range === 'all');
-            });
-            
-            await loadAllProducts();
-            updateSelectedCount();
-            
-            reloadBtn.textContent = '다시불러오기';
-            reloadBtn.disabled = false;
         });
         
         // 페이지 로드

@@ -428,6 +428,7 @@
                     <div id="selectedCount" class="stats">
                         선택: <span class="selected-info">0</span>개
                     </div>
+                    <button id="clearBtn" class="btn-cancel" style="display: none; padding: 8px 16px;" onclick="clearAllSelections()">선택 해제</button>
                     <button id="inquiryBtn" class="btn-inquiry" disabled>선택상품으로 문의하기</button>
                 </div>
             </div>
@@ -766,6 +767,7 @@
         function handleSearch() {
             const query = searchBox.value.toLowerCase().trim();
             let results = allProducts;
+            let hasFilter = false; // 필터 적용 여부
             
             if (query) {
                 results = results.filter(product => {
@@ -776,10 +778,12 @@
                         (product.productComposition || '').toLowerCase().includes(query)
                     );
                 });
+                hasFilter = true;
             }
             
             if (selectedCategory !== 'all') {
                 results = results.filter(product => product.categoryName === selectedCategory);
+                hasFilter = true;
             }
             
             if (selectedPriceRange !== 'all') {
@@ -788,15 +792,28 @@
                     const price = parseFloat(String(product.salesPrice || '0').replace(/,/g, ''));
                     return price >= min && price <= max;
                 });
+                hasFilter = true;
             }
             
             // 선택한 상품만 보기 필터
             if (showOnlySelected) {
                 results = results.filter(product => selectedProducts.has(product.productCode));
+                hasFilter = true;
             }
             
             filteredProducts = results;
-            filteredProducts.sort((a, b) => a._originalIndex - b._originalIndex);
+            
+            // 정렬: 필터 적용 시 금액 낮은 순, 아니면 원본 순서
+            if (hasFilter) {
+                filteredProducts.sort((a, b) => {
+                    const priceA = parseFloat(String(a.salesPrice || '0').replace(/,/g, ''));
+                    const priceB = parseFloat(String(b.salesPrice || '0').replace(/,/g, ''));
+                    return priceA - priceB; // 오름차순 (낮은 가격 우선)
+                });
+            } else {
+                filteredProducts.sort((a, b) => a._originalIndex - b._originalIndex);
+            }
+            
             updateStats();
             renderProducts(true);
         }
@@ -888,6 +905,20 @@
             selectedCountEl.innerHTML = `선택: <span class="selected-info">${count}</span>개`;
             document.getElementById('selectedFilterCount').textContent = count;
             inquiryBtn.disabled = count === 0;
+            
+            // 선택 해제 버튼 표시/숨김
+            const clearBtn = document.getElementById('clearBtn');
+            clearBtn.style.display = count > 0 ? 'block' : 'none';
+        }
+        
+        // 선택 전체 해제
+        function clearAllSelections() {
+            if (!confirm('선택한 상품을 모두 해제하시겠습니까?')) return;
+            
+            selectedProducts.clear();
+            localStorage.setItem(STORAGE_KEY, '[]');
+            updateSelectedCount();
+            renderProducts(true);
         }
         
         // 통계 업데이트
@@ -1042,6 +1073,7 @@
         window.handleRowClick = handleRowClick;
         window.toggleSelectedFilter = toggleSelectedFilter;
         window.handleCategoryFilter = handleCategoryFilter;
+        window.clearAllSelections = clearAllSelections;
         
         // 이벤트 리스너
         searchBox.addEventListener('input', debounce(handleSearch, 300));
